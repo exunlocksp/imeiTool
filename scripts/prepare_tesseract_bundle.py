@@ -65,6 +65,10 @@ def _copy_dylibs(binary: Path, lib_dir: Path) -> None:
 
 
 def main() -> int:
+    if sys.platform == "win32":
+        win_script = Path(__file__).resolve().parent / "prepare_tesseract_bundle_win.py"
+        return subprocess.call([sys.executable, str(win_script)])
+
     tess_bin = shutil.which("tesseract")
     prefix = _brew_prefix("tesseract")
 

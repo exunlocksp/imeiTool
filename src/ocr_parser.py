@@ -295,6 +295,22 @@ def ocr_available() -> bool:
     return tesseract_available()
 
 
+def ocr_missing_hint() -> str:
+    if sys.platform == "darwin":
+        return (
+            "Trên macOS: cần macOS 10.15+ (Vision có sẵn).\n"
+            "Hoặc cài Tesseract:\n  brew install tesseract tesseract-lang"
+        )
+    if sys.platform == "win32":
+        return (
+            "OCR chưa được nhúng trong thư mục tesseract\\.\n"
+            "Chạy một lần trên máy dev:\n"
+            "  .\\.venv\\Scripts\\python.exe scripts\\prepare_tesseract_bundle_win.py\n"
+            "Sau đó copy cả thư mục project (kèm tesseract\\) sang máy khác."
+        )
+    return "Cài Tesseract OCR trên hệ thống."
+
+
 def tesseract_available() -> bool:
     if pytesseract is None:
         return False
@@ -313,15 +329,15 @@ def _ocr_tesseract(image: Image.Image, lang: Optional[str] = None) -> str:
         langs: list[str] = []
         try:
             available = pytesseract.get_languages(config="")
-            if "vie" in available:
-                langs.append("vie")
-            if "eng" in available:
-                langs.append("eng")
+            for code in ("vie", "eng"):
+                if code in available:
+                    langs.append(code)
         except Exception:
-            langs = ["eng"]
-        lang = "+".join(langs) if langs else "eng"
+            pass
+        lang = "+".join(langs) if langs else "eng+vie"
 
-    return pytesseract.image_to_string(image, lang=lang)
+    config = "--psm 6"
+    return pytesseract.image_to_string(image, lang=lang, config=config)
 
 
 def ocr_image(image: Image.Image, lang: Optional[str] = None) -> str:

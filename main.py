@@ -12,9 +12,10 @@ else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from src.app_branding import APP_NAME  # noqa: E402
-from src.macos_menu import prime_macos_app_name  # noqa: E402
 
 if sys.platform == "darwin":
+    from src.macos_menu import prime_macos_app_name  # noqa: E402
+
     prime_macos_app_name(APP_NAME)
 
 from src.gui import run_app  # noqa: E402

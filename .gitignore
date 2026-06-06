@@ -1,9 +1,12 @@
 .venv/
 .venv-x86/
+.python/
+tesseract/
 build/
 dist/
 pyarmor-regcode*.txt
 pyarmor-regfile*.zip
+pyarmor.bug.log
 .pyarmor/
 __pycache__/
 *.pyc

@@ -13,7 +13,19 @@ import customtkinter as ctk
 from PIL import Image
 
 from src.app_branding import ABOUT_CREDITS, APP_NAME, APP_VERSION, app_icon_path
-from src.macos_menu import apply_macos_menu_branding, register_about_handler
+if sys.platform == "darwin":
+    from src.macos_menu import apply_macos_menu_branding, register_about_handler
+else:
+
+    def register_about_handler(root, app_name, *, about_credits, app_version):  # type: ignore[no-untyped-def]
+        def _noop() -> None:
+            pass
+
+        return _noop
+
+    def apply_macos_menu_branding(root, app_name, *, quit_command=None) -> None:  # type: ignore[no-untyped-def]
+        return None
+
 from src.clipboard_image import clipboard_image
 from src.database import DeviceDatabase
 from src.excel_export import export_records
@@ -22,7 +34,13 @@ from src.line_import import LINE_IMPORT_HINT, parse_bulk_lines
 from src.app_settings import AppSettings
 from src.print_labels import open_print_labels
 from src.settings_dialog import open_settings_dialog
-from src.ocr_parser import ocr_available, ocr_engine_name, parse_image, parse_text_to_record
+from src.ocr_parser import (
+    ocr_available,
+    ocr_engine_name,
+    ocr_missing_hint,
+    parse_image,
+    parse_text_to_record,
+)
 from src.trial import (
     get_trial_status,
     show_trial_expired_dialog,
@@ -955,12 +973,7 @@ class ImeiToolApp:
                 messagebox.showinfo("Ảnh", "Chọn hoặc dán ảnh trước.", parent=win)
                 return
             if not ocr_available():
-                messagebox.showwarning(
-                    "Thiếu OCR",
-                    "Trên macOS: cần macOS 10.15+ (Vision có sẵn).\n"
-                    "Hoặc cài Tesseract:\n  brew install tesseract tesseract-lang",
-                    parent=win,
-                )
+                messagebox.showwarning("Thiếu OCR", ocr_missing_hint(), parent=win)
                 return
             self.status_var.set("Đang đọc ảnh…")
             win.update_idletasks()
@@ -1083,12 +1096,7 @@ class ImeiToolApp:
         if not paths:
             return 0
         if not ocr_available():
-            messagebox.showwarning(
-                "Thiếu OCR",
-                "Trên macOS: cần macOS 10.15+ (Vision có sẵn).\n"
-                "Hoặc cài Tesseract:\n  brew install tesseract tesseract-lang",
-                parent=parent,
-            )
+            messagebox.showwarning("Thiếu OCR", ocr_missing_hint(), parent=parent)
             return 0
 
         total = len(paths)

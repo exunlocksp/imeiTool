@@ -138,7 +138,15 @@ def write_pngs() -> None:
         )
         print(f"Wrote {icns_path}")
     else:
-        print("Skip .icns (iconutil chỉ có trên macOS)")
+        print("Skip .icns (macOS only)")
+
+    ico_path = ASSETS / "AppIcon.ico"
+    draw_plug_icon(256).save(
+        ico_path,
+        format="ICO",
+        sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)],
+    )
+    print(f"Wrote {ico_path}")
     print(f"Assets in {ASSETS}")
 
 
