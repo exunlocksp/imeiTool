@@ -1,0 +1,13 @@
+.venv/
+.venv-x86/
+build/
+dist/
+pyarmor-regcode*.txt
+pyarmor-regfile*.zip
+.pyarmor/
+__pycache__/
+*.pyc
+.DS_Store
+*.xlsx
+.idea/
+.vscode/
