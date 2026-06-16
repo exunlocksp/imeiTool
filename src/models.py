@@ -18,6 +18,11 @@ class DeviceRecord:
     color: str = ""
     storage_capacity: str = ""  # Bộ nhớ marketing (128 GB, 256 GB, …) — USB khi có
     condition: str = ""  # Hình thức (máy mới, máy cũ, …) — nhập/sửa thủ công
+    simlock: str = ""
+    fmi: str = ""  # Find My iPhone (iCloud): On | Off — USB
+    active: str = ""  # Trạng thái kích hoạt: Yes | No — USB
+    carrier: str = ""  # Tên nhà mạng SIM — USB
+    mdm: str = ""  # MDM Lock: On | Off — từ kết quả check (server parse)
     battery_percent: str = ""
     battery_health: str = ""
     cycle_count: str = ""

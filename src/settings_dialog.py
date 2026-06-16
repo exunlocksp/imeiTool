@@ -1,146 +1,168 @@
-"""Hộp thoại Cài đặt — cột bảng và mục in."""
+"""Hộp thoại Cài đặt — cột bảng, mục in, simlock (PySide6)."""
 
 from __future__ import annotations
 
-import tkinter as tk
-from tkinter import messagebox
-from typing import Callable
+from typing import Callable, Optional
 
-import customtkinter as ctk
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from src.app_settings import (
     PRINT_FIELD_KEYS,
     PRINT_FIELD_LABELS,
+    SIMLOCK_PRINT_LABELS,
     TABLE_COLUMN_KEYS,
     TABLE_COLUMN_LABELS,
     AppSettings,
 )
+from src.theme import mark_primary
 
-class SettingsDialog(ctk.CTkToplevel):
+
+def _section_label(text: str) -> QLabel:
+    label = QLabel(text)
+    label.setStyleSheet("font-size: 15px; font-weight: bold;")
+    return label
+
+
+def _hint_label(text: str) -> QLabel:
+    label = QLabel(text)
+    label.setStyleSheet("color: gray;")
+    label.setWordWrap(True)
+    return label
+
+
+def _check_frame() -> tuple[QFrame, QVBoxLayout]:
+    frame = QFrame()
+    frame.setFrameShape(QFrame.StyledPanel)
+    frame.setProperty("card", True)
+    layout = QVBoxLayout(frame)
+    layout.setContentsMargins(12, 8, 12, 8)
+    layout.setSpacing(4)
+    return frame, layout
+
+
+class SettingsDialog(QDialog):
     def __init__(
         self,
-        parent: tk.Misc,
+        parent: Optional[QWidget],
         settings: AppSettings,
         on_save: Callable[[AppSettings], None],
     ) -> None:
         super().__init__(parent)
         self._on_save = on_save
-        self._table_vars: dict[str, tk.BooleanVar] = {}
-        self._print_vars: dict[str, tk.BooleanVar] = {}
+        self._table_checks: dict[str, QCheckBox] = {}
+        self._print_checks: dict[str, QCheckBox] = {}
 
-        self.title("Cài đặt")
-        self.geometry("460x520")
-        self.minsize(400, 420)
-        self.transient(parent)
-        self.grab_set()
+        self.setWindowTitle("Cài đặt")
+        self.setMinimumSize(420, 480)
+        self.resize(480, 600)
 
-        body = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        body.pack(fill=tk.BOTH, expand=True, padx=16, pady=(16, 8))
+        root = QVBoxLayout(self)
+        root.setContentsMargins(16, 16, 16, 16)
 
-        ctk.CTkLabel(
-            body,
-            text="Bảng",
-            font=ctk.CTkFont(size=15, weight="bold"),
-            anchor=tk.W,
-        ).pack(anchor=tk.W, pady=(0, 6))
-        ctk.CTkLabel(
-            body,
-            text="Cột được tick sẽ hiển thị trên bảng.",
-            text_color=("#666666", "#AAAAAA"),
-            anchor=tk.W,
-        ).pack(anchor=tk.W, pady=(0, 8))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        body = QWidget()
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 8, 0)
+        layout.setSpacing(8)
 
-        table_frame = ctk.CTkFrame(body, corner_radius=8)
-        table_frame.pack(fill=tk.X, pady=(0, 16))
+        layout.addWidget(_section_label("Bảng"))
+        layout.addWidget(_hint_label("Cột được tick sẽ hiển thị trên bảng."))
+        table_frame, table_layout = _check_frame()
         for key in TABLE_COLUMN_KEYS:
-            var = tk.BooleanVar(value=settings.table_columns.get(key, True))
-            self._table_vars[key] = var
-            ctk.CTkCheckBox(
-                table_frame,
-                text=TABLE_COLUMN_LABELS[key],
-                variable=var,
-                font=ctk.CTkFont(size=13),
-            ).pack(anchor=tk.W, padx=12, pady=4)
+            check = QCheckBox(TABLE_COLUMN_LABELS[key])
+            check.setChecked(settings.table_columns.get(key, True))
+            self._table_checks[key] = check
+            table_layout.addWidget(check)
+        layout.addWidget(table_frame)
 
-        ctk.CTkLabel(
-            body,
-            text="In",
-            font=ctk.CTkFont(size=15, weight="bold"),
-            anchor=tk.W,
-        ).pack(anchor=tk.W, pady=(0, 6))
-        ctk.CTkLabel(
-            body,
-            text="Mục được tick sẽ in trên nhãn.",
-            text_color=("#666666", "#AAAAAA"),
-            anchor=tk.W,
-        ).pack(anchor=tk.W, pady=(0, 8))
-
-        print_frame = ctk.CTkFrame(body, corner_radius=8)
-        print_frame.pack(fill=tk.X, pady=(0, 8))
+        layout.addWidget(_section_label("In"))
+        layout.addWidget(
+            _hint_label(
+                "Mục được tick sẽ in trên nhãn "
+                "(Màu · Dung lượng một dòng; Ngoại hình riêng trên barcode)."
+            )
+        )
+        print_frame, print_layout = _check_frame()
         for key in PRINT_FIELD_KEYS:
-            var = tk.BooleanVar(value=settings.print_fields.get(key, True))
-            self._print_vars[key] = var
-            ctk.CTkCheckBox(
-                print_frame,
-                text=PRINT_FIELD_LABELS[key],
-                variable=var,
-                font=ctk.CTkFont(size=13),
-            ).pack(anchor=tk.W, padx=12, pady=4)
+            check = QCheckBox(PRINT_FIELD_LABELS[key])
+            check.setChecked(settings.print_fields.get(key, True))
+            self._print_checks[key] = check
+            print_layout.addWidget(check)
+        layout.addWidget(print_frame)
 
-        actions = ctk.CTkFrame(self, fg_color="transparent")
-        actions.pack(fill=tk.X, padx=16, pady=(0, 16))
+        simlock_hint = " · ".join(
+            f"{api} → {label}" for api, label in SIMLOCK_PRINT_LABELS.items()
+        )
+        layout.addWidget(_hint_label(f"In Simlock: {simlock_hint}"))
 
-        ctk.CTkButton(
-            actions,
-            text="Hủy",
-            width=100,
-            fg_color=("#E8E8E8", "#3A3A3A"),
-            text_color=("#1A1A1A", "#EEEEEE"),
-            hover_color=("#D0D0D0", "#4A4A4A"),
-            command=self.destroy,
-        ).pack(side=tk.RIGHT, padx=(8, 0))
+        layout.addWidget(_section_label("Simlock"))
+        simlock_frame, simlock_layout = _check_frame()
+        self._auto_simlock_check = QCheckBox("Tự động Check Simlock khi cắm USB")
+        self._auto_simlock_check.setChecked(settings.auto_check_simlock)
+        simlock_layout.addWidget(self._auto_simlock_check)
+        simlock_layout.addWidget(
+            _hint_label(
+                "Bật: mỗi lần cắm USB sẽ tự gửi check Lock/Unlocked "
+                "(giữ kết quả khi rút cáp)."
+            )
+        )
+        layout.addWidget(simlock_frame)
 
-        ctk.CTkButton(
-            actions,
-            text="Lưu",
-            width=100,
-            command=self._save,
-        ).pack(side=tk.RIGHT)
+        layout.addStretch(1)
+        scroll.setWidget(body)
+        root.addWidget(scroll, 1)
 
-        self.bind("<Escape>", lambda _e: self.destroy())
-        self.after(50, self.focus_set)
+        actions = QHBoxLayout()
+        actions.addStretch(1)
+        save_btn = QPushButton("Lưu")
+        mark_primary(save_btn)
+        save_btn.setDefault(True)
+        save_btn.clicked.connect(self._save)
+        actions.addWidget(save_btn)
+        cancel_btn = QPushButton("Hủy")
+        cancel_btn.clicked.connect(self.reject)
+        actions.addWidget(cancel_btn)
+        root.addLayout(actions)
 
     def _save(self) -> None:
         settings = AppSettings(
-            table_columns={key: var.get() for key, var in self._table_vars.items()},
-            print_fields={key: var.get() for key, var in self._print_vars.items()},
+            table_columns={key: check.isChecked() for key, check in self._table_checks.items()},
+            print_fields={key: check.isChecked() for key, check in self._print_checks.items()},
+            auto_check_simlock=self._auto_simlock_check.isChecked(),
         )
         if not settings.visible_table_columns():
-            messagebox.showwarning(
-                "Cài đặt",
-                "Phải chọn ít nhất một cột hiển thị trên bảng.",
-                parent=self,
+            QMessageBox.warning(
+                self, "Cài đặt", "Phải chọn ít nhất một cột hiển thị trên bảng."
             )
             return
         if not settings.has_print_content():
-            messagebox.showwarning(
-                "Cài đặt",
-                "Phải chọn ít nhất một mục in.",
-                parent=self,
-            )
+            QMessageBox.warning(self, "Cài đặt", "Phải chọn ít nhất một mục in.")
             return
         try:
             settings.save()
         except OSError as exc:
-            messagebox.showerror("Cài đặt", f"Không lưu được cài đặt:\n{exc}", parent=self)
+            QMessageBox.critical(self, "Cài đặt", f"Không lưu được cài đặt:\n{exc}")
             return
         self._on_save(settings)
-        self.destroy()
+        self.accept()
 
 
 def open_settings_dialog(
-    parent: tk.Misc,
+    parent: Optional[QWidget],
     settings: AppSettings,
     on_save: Callable[[AppSettings], None],
 ) -> None:
-    SettingsDialog(parent, settings, on_save)
+    SettingsDialog(parent, settings, on_save).exec()

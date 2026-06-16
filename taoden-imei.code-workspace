@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "desktop",
+      "path": "."
+    },
+    {
+      "name": "server",
+      "path": "../../Herd/imeitool"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/vendor": true,
+      "**/.venv": true,
+      "**/build": true,
+      "**/dist": true
+    }
+  }
+}

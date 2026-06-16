@@ -45,19 +45,22 @@ for _bundle in (tesseract_bundle, project_dir / "tesseract"):
 
 hiddenimports += collect_submodules("pymobiledevice3")
 hiddenimports += collect_submodules("PIL")
+hiddenimports += collect_submodules("keyring")
 try:
     hiddenimports += collect_submodules("ocrmac")
 except Exception:
     pass
 hiddenimports += [
-    "customtkinter",
+    "PySide6",
+    "PySide6.QtCore",
+    "PySide6.QtGui",
+    "PySide6.QtWidgets",
     "asyncio",
     "plistlib",
     "construct",
     "construct.core",
     "cryptography",
     "OpenSSL",
-    "PIL._tkinter_finder",
     "PIL.ImageGrab",
     "pytesseract",
     "openpyxl",
@@ -70,6 +73,9 @@ hiddenimports += [
     "src.usb_reader",
     "src.ocr_parser",
     "src.excel_export",
+    "src.text_export",
+    "src.export_common",
+    "src.export_fields_dialog",
     "src.models",
     "src.database",
     "src.product_map",
@@ -82,6 +88,7 @@ hiddenimports += [
     "src.print_labels",
     "src.app_settings",
     "src.settings_dialog",
+    "src.theme",
     "barcode",
     "barcode.writer",
     "barcode.codex",
@@ -89,6 +96,13 @@ hiddenimports += [
     "src.line_import",
     "src.about_dialog",
     "src.trial",
+    "src.api_client",
+    "src.api_config",
+    "src.machine_id",
+    "src.license",
+    "src.license_dialog",
+    "src.server_submit",
+    "src.login_help",
     "src.macos_menu",
 ]
 if sys.platform == "darwin":
@@ -111,7 +125,6 @@ if sys.platform == "win32":
 
 datas += collect_data_files("pymobiledevice3", include_py_files=True)
 datas += collect_data_files("certifi")
-datas += collect_data_files("customtkinter")
 
 _assets = project_dir / "assets"
 if _assets.is_dir():

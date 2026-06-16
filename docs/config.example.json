@@ -1,0 +1,11 @@
+{
+  "_note": "App không còn đọc file JSON. Cấu hình lưu SQLite; token/email lưu keyring (macOS Keychain / Windows Credential Manager).",
+  "api_base_url": "https://tool.taoden.vn/api/v1",
+  "api_email": "shop@taoden.vn",
+  "api_token": "TAODEN-DEMO-TOKEN-2026",
+  "storage": {
+    "settings_db_mac": "~/Library/Application Support/Taoden IMEI/devices.db",
+    "settings_db_win": "%APPDATA%/Taoden IMEI/devices.db",
+    "secrets": "keyring service com.taoden.imeitool"
+  }
+}

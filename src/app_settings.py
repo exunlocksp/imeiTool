@@ -24,6 +24,11 @@ TABLE_COLUMN_KEYS = (
     "color",
     "storage",
     "condition",
+    "simlock",
+    "fmi",
+    "active",
+    "carrier",
+    "mdm",
     "battery_health",
     "cycle_count",
 )
@@ -39,6 +44,11 @@ TABLE_COLUMN_LABELS: dict[str, str] = {
     "color": "Màu",
     "storage": "Bộ nhớ",
     "condition": "Hình thức",
+    "simlock": "Simlock",
+    "fmi": "FMI (iCloud)",
+    "active": "Active",
+    "carrier": "Nhà mạng",
+    "mdm": "MDM",
     "battery_health": "% Pin",
     "cycle_count": "Lần sạc",
 }
@@ -48,8 +58,14 @@ PRINT_FIELD_KEYS = (
     "model",
     "color",
     "storage",
+    "condition",
     "battery_health",
     "ios",
+    "simlock",
+    "fmi",
+    "active",
+    "carrier",
+    "mdm",
     "barcode",
 )
 
@@ -58,9 +74,21 @@ PRINT_FIELD_LABELS: dict[str, str] = {
     "model": "Model",
     "color": "Màu",
     "storage": "Dung lượng",
+    "condition": "Hình thức",
     "battery_health": "% Pin",
     "ios": "iOS",
+    "simlock": "Simlock",
+    "fmi": "FMI (iCloud)",
+    "active": "Active",
+    "carrier": "Nhà mạng",
+    "mdm": "MDM",
     "barcode": "Barcode",
+}
+
+# Nhãn in cho cột simlock (Unlocked / Locked từ API).
+SIMLOCK_PRINT_LABELS: dict[str, str] = {
+    "Unlocked": "Quốc Tế",
+    "Locked": "Máy Lock",
 }
 
 
@@ -76,6 +104,7 @@ def _default_flags(keys: tuple[str, ...]) -> dict[str, bool]:
 class AppSettings:
     table_columns: dict[str, bool] = field(default_factory=lambda: _default_flags(TABLE_COLUMN_KEYS))
     print_fields: dict[str, bool] = field(default_factory=lambda: _default_flags(PRINT_FIELD_KEYS))
+    auto_check_simlock: bool = False
 
     def visible_table_columns(self) -> list[str]:
         return [key for key in TABLE_COLUMN_KEYS if self.table_columns.get(key, True)]
@@ -100,16 +129,30 @@ class AppSettings:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AppSettings:
-        table = _default_flags(TABLE_COLUMN_KEYS)
-        table.update({k: bool(v) for k, v in (data.get("table_columns") or {}).items() if k in table})
-        print_f = _default_flags(PRINT_FIELD_KEYS)
-        print_f.update({k: bool(v) for k, v in (data.get("print_fields") or {}).items() if k in print_f})
-        return cls(table_columns=table, print_fields=print_f)
+        saved_table = data.get("table_columns") or {}
+        if saved_table:
+            # File cũ: cột mới (fmi, active, carrier…) ẩn mặc định — không phá layout đã lưu.
+            table = {key: bool(saved_table.get(key, False)) for key in TABLE_COLUMN_KEYS}
+        else:
+            table = _default_flags(TABLE_COLUMN_KEYS)
+
+        saved_print = data.get("print_fields") or {}
+        if saved_print:
+            print_f = {key: bool(saved_print.get(key, False)) for key in PRINT_FIELD_KEYS}
+        else:
+            print_f = _default_flags(PRINT_FIELD_KEYS)
+
+        return cls(
+            table_columns=table,
+            print_fields=print_f,
+            auto_check_simlock=bool(data.get("auto_check_simlock", False)),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "table_columns": {key: bool(self.table_columns.get(key, True)) for key in TABLE_COLUMN_KEYS},
             "print_fields": {key: bool(self.print_fields.get(key, True)) for key in PRINT_FIELD_KEYS},
+            "auto_check_simlock": bool(self.auto_check_simlock),
         }
 
     def save(self) -> None:

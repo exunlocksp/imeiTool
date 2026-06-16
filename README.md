@@ -83,6 +83,17 @@ File phát hành gọn (chỉ app):
 cd dist && zip -r "../Taoden-IMEI-Tool-macOS.zip" "Taoden IMEI Tool.app"
 ```
 
+## API server (Laravel)
+
+Desktop gọi API tại **`https://tool.taoden.vn/api/v1`** (mặc định trong app; dev local: `TAODEN_API_URL=https://imeitool.test/api/v1`).
+
+Desktop có thể gọi API license/sync — server Laravel tại `~/Herd/imeitool`.
+
+- Workspace Cursor: mở `taoden-imei.code-workspace` (desktop + server)
+- Contract API: [docs/api.md](docs/api.md)
+- Cấu hình client: copy [docs/config.example.json](docs/config.example.json) → `~/.taoden-imei-tool.json`
+- Module Python: `src/api_client.py`
+
 ## Cấu trúc
 
 ```
