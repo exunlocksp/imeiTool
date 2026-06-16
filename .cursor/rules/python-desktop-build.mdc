@@ -1,0 +1,32 @@
+---
+description: Build & phát hành (PyArmor + PyInstaller + PDF hướng dẫn)
+globs: build*.sh,build*.ps1,*.spec,scripts/**/*
+alwaysApply: false
+---
+
+# Build & release
+
+```bash
+./build_mac.sh                    # arm64 + obf + PDF
+SKIP_PYARMOR=1 ./build_mac.sh     # Pyarmor lỗi mạng
+REUSE_OBF=1 ./build_mac.sh        # cache build/obf
+OBF_ONLY=1 ./build_mac.sh         # chỉ obfuscate
+BUILD_ALL=1 ./build_mac.sh        # arm64 + Intel
+```
+
+Thứ tự: clean → deps → pyarmor → pyinstaller → `scripts/generate_user_guide_pdf.py` → `dist/Huong-dan-su-dung.pdf`
+
+Zip phát hành:
+
+```bash
+cd dist && zip -r "../Taoden-IMEI-Tool-macOS.zip" "Taoden IMEI Tool.app" "Huong-dan-su-dung.pdf"
+```
+
+## spec
+
+- `PYARMOR_OBF_DIR` → entry `build/obf/main.py` + runtime datas
+- Cập nhật `hiddenimports` khi thêm module `src.*` mới
+
+## Không commit
+
+`pyarmor-regfile*.zip`, `.env`, `dist/`, `build/obf/`

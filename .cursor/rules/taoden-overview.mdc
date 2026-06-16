@@ -1,0 +1,39 @@
+---
+description: Taoden IMEI — tổng quan hệ thống desktop + server (multi-root)
+alwaysApply: true
+---
+
+# Taoden IMEI Tool — hệ thống
+
+| Workspace | Repo | Stack |
+|-----------|------|-------|
+| `Documents/imeiTool` | imeiTool | Python 3.11, **PySide6**, SQLite, PyArmor, PyInstaller |
+| `Herd/imeitool` | imeitool | Laravel 13, Filament, Horizon, Redis, Sanctum |
+
+Mở workspace: `taoden-imei.code-workspace`.
+
+## Production
+
+- Web/API: `https://tool.taoden.vn` — deploy `./scripts/deploy-remote.sh` (server)
+- Desktop mặc định: `https://tool.taoden.vn/api/v1`
+- Dev: `https://imeitool.test/api/v1` (Herd)
+
+## Contract API (nguồn chính)
+
+1. `desktop/docs/api.md` — viết trước, đồng bộ 2 phía
+2. `desktop/src/api_client.py` — client
+3. `server/routes/api.php` + controllers/services
+
+**Không** gộp PHP vào repo Python hoặc ngược lại.
+
+## Luồng chính
+
+USB/OCR → bảng local (`devices.db`) → dịch vụ qua `order_sync` (status 1→2→4) → `parsed` server → cột check → xuất Excel/Text / in PDF nhãn.
+
+## Skill dự án
+
+Đọc `.cursor/skills/taoden-imei/SKILL.md` khi sửa feature xuyên desktop↔server, deploy, hoặc build phát hành.
+
+## Git / commit
+
+Chỉ commit khi user yêu cầu. Không commit: `.env`, `pyarmor-regfile*.zip`, secrets.

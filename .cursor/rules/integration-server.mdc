@@ -1,0 +1,12 @@
+---
+description: Laravel API server — tích hợp desktop (chi tiết → taoden-overview)
+alwaysApply: false
+---
+
+# Server ↔ Desktop
+
+Xem rule `taoden-overview` và skill `.cursor/skills/taoden-imei/SKILL.md`.
+
+- Contract: `Documents/imeiTool/docs/api.md`
+- Client: `Documents/imeiTool/src/api_client.py`
+- Sau sửa server: deploy VPS (rule `laravel-deploy-after-change`)

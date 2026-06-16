@@ -1,0 +1,34 @@
+---
+description: Desktop — API client, auth, order sync, bảo mật TLS/env
+globs: src/api_client.py,src/api_config.py,src/order_sync.py,src/license*.py,src/secure_store.py,src/simlock_sync.py,docs/api.md
+alwaysApply: false
+---
+
+# Desktop — API & đồng bộ đơn
+
+## Module
+
+| File | Vai trò |
+|------|---------|
+| `api_config.py` | Base URL, load config; env cred **chỉ dev** (`*.test` hoặc `TAODEN_ALLOW_ENV_CREDENTIALS=1`) |
+| `api_client.py` | HTTP; SSL fallback **chỉ** dev host; production dùng certifi |
+| `secure_store.py` | Token/email → keyring (`com.taoden.imeitool`) |
+| `order_sync.py` | Engine nền: status 1 pending → 2 processing → poll 5s → 4 done / 3 denied |
+| `license.py` | Trạng thái license + refresh badge |
+
+## Auth
+
+- Khuyến nghị: OAuth desktop (`/auth/desktop` → `/access/exchange`) → Bearer Sanctum 7 ngày
+- Dự phòng: mã kích hoạt `users.api_token` qua `POST /access/verify`
+- Trả phí: `credits > 0`; **Albert simlock** miễn phí (`POST /albert/simlock`)
+
+## Đổi endpoint
+
+1. Sửa `docs/api.md`
+2. Sửa Laravel controller/service
+3. Sửa `api_client.py`
+4. Test + deploy server nếu production
+
+## Parsed
+
+Desktop **không** parse check fields local — dùng `parsed` từ server (`auto_services._apply_server_parsed`).

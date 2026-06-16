@@ -1,0 +1,34 @@
+---
+description: GUI PySide6 — cửa sổ chính, bảng, dialog, in nhãn
+globs: src/gui.py,src/*dialog*.py,src/print_labels.py,src/login_help.py,src/theme.py
+alwaysApply: false
+---
+
+# GUI PySide6
+
+## Kiến trúc
+
+- `ImeiToolWindow(QMainWindow)`: bảng + panel chi tiết + log + menu
+- Login modal trước cửa sổ chính (`license_dialog`, `browser_login`)
+- Worker thread → UI: **`self._post(fn)`** (signal queued), không đụng widget từ thread
+
+## Bảng
+
+- Cột `check`: tick chọn; header click = all/none
+- Guard `self._updating_table` khi set item programmatically
+- Sort cột: rebuild rows — flash pending theo **record key**, không index
+
+## Menu chính
+
+- **Tệp:** Xuất Text/Excel, In đã tick, Thoát
+- **Nhập liệu:** ảnh OCR, văn bản, thêm dòng
+- **Dịch vụ:** simlock free, dịch vụ khác
+- **Cài đặt:** bảng/in nhãn, tài khoản API
+
+## In nhãn
+
+PDF (Pillow) → `open` Preview / `startfile` — không `NSPrintOperation` trực tiếp.
+
+## Theme
+
+`src/theme.py` — dark, đồng bộ website; `apply_theme(app)` trong `run_app()`.

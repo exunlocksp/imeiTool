@@ -1,0 +1,32 @@
+---
+description: macOS — menu, OCR Vision, USB, build
+globs: src/macos_*.py,src/ocr_parser.py,build_mac.sh
+alwaysApply: false
+---
+
+# macOS
+
+## Trước GUI
+
+`prime_macos_app_name(APP_NAME)` — menu bar không hiện "Python".
+
+## OCR
+
+- **Vision / ocrmac** mặc định (không Tesseract)
+- `BUNDLE_TESSERACT=1` khi build nếu cần dự phòng
+
+## USB
+
+- `pymobiledevice3` + usbmuxd; poll trong thread → UI qua `_post()`
+- iOS 17.4+ có thể hạn chế MobileGestalt; lockdown vẫn có IMEI khi đã Tin cậy
+
+## Build
+
+- arm64: `.venv`, `PYARMOR_PLATFORM=darwin.arm64`
+- Intel: `.venv-x86`, `TARGET_ARCH=x86_64`
+- Gatekeeper: chuột phải → Open lần đầu
+
+## Tránh
+
+- In AppKit trực tiếp (crash/trang trống)
+- `root.after` (Tk) — dùng Qt `_post`

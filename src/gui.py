@@ -294,7 +294,7 @@ class ImeiToolWindow(QMainWindow):
         self._status_flash_bright = True
         self._status_highlight_active = False
 
-        self._simlock_flash_rows: dict[int, bool] = {}
+        self._simlock_flash_rows: dict[int | str, bool] = {}
         self._simlock_flash_timer = QTimer(self)
         self._simlock_flash_timer.setInterval(ROW_SIMLOCK_FLASH_MS)
         self._simlock_flash_timer.timeout.connect(self._simlock_flash_tick)
@@ -1163,6 +1163,22 @@ class ImeiToolWindow(QMainWindow):
         self._update_table_headers()
         self._resize_all_columns_to_contents()
         self._apply_table_filter()
+        self._refresh_simlock_flash_painting()
+
+    def _refresh_simlock_flash_painting(self) -> None:
+        """Sau sort/filter: vẽ lại nhấp nháy đúng vị trí dòng hiện tại."""
+        for key, bright in list(self._simlock_flash_rows.items()):
+            row = self._row_for_flash_key(key)
+            if row is None:
+                self._simlock_flash_rows.pop(key, None)
+                continue
+            self._paint_simlock_row(row, bright=bright)
+
+    def _row_for_flash_key(self, key: int | str) -> Optional[int]:
+        for i, record in enumerate(self.records):
+            if self._record_row_key(record) == key:
+                return i
+        return None
 
     # -------------------------------------------------------- interactions
 
@@ -1441,7 +1457,7 @@ class ImeiToolWindow(QMainWindow):
         self._db_save_record(record)
         self._update_row(row_index, record)
         if not self._record_has_pending_orders(record):
-            self._stop_simlock_row_flash(row_index)
+            self._stop_simlock_row_flash_for_record(record)
 
     def _apply_note_analysis(self, record: DeviceRecord) -> bool:
         """Sau run dịch vụ: chỉ cập nhật cột check từ ghi chú."""
@@ -1655,21 +1671,56 @@ class ImeiToolWindow(QMainWindow):
 
     # ----------------------------------------------------------- simlock
 
-    def _start_simlock_row_flash(self, row: int) -> None:
-        if 0 <= row < len(self.records):
-            self._update_row(row, self.records[row])
-        self._simlock_flash_rows[row] = True
+    def _start_simlock_row_flash_for_record(self, record: DeviceRecord) -> None:
+        row = self._row_index_for_record(record)
+        if row is None:
+            return
+        key = self._record_row_key(record)
+        self._update_row(row, record)
+        self._simlock_flash_rows[key] = True
         if not self._simlock_flash_timer.isActive():
             self._simlock_flash_timer.start()
         self._paint_simlock_row(row, bright=True)
+
+    def _stop_simlock_row_flash_for_record(self, record: DeviceRecord) -> None:
+        key = self._record_row_key(record)
+        self._simlock_flash_rows.pop(key, None)
+        if not self._simlock_flash_rows:
+            self._simlock_flash_timer.stop()
+        row = self._row_index_for_record(record)
+        if row is not None:
+            self._update_row(row, record)
+
+    def _row_index_for_record(self, record: DeviceRecord) -> Optional[int]:
+        try:
+            return self.records.index(record)
+        except ValueError:
+            return None
+
+    def _start_simlock_row_flash(self, row: int) -> None:
+        record = self._record_at_index(row)
+        if record is not None:
+            self._start_simlock_row_flash_for_record(record)
 
     def _simlock_flash_tick(self) -> None:
         if not self._simlock_flash_rows:
             self._simlock_flash_timer.stop()
             return
-        for row in list(self._simlock_flash_rows):
-            bright = not self._simlock_flash_rows[row]
-            self._simlock_flash_rows[row] = bright
+        for key in list(self._simlock_flash_rows):
+            row = self._row_for_flash_key(key)
+            if row is None:
+                self._simlock_flash_rows.pop(key, None)
+                continue
+            record = self.records[row]
+            if (
+                record.simlock != SIMLOCK_PENDING_LABEL
+                and not self._record_has_pending_orders(record)
+            ):
+                self._simlock_flash_rows.pop(key, None)
+                self._update_row(row, record)
+                continue
+            bright = not self._simlock_flash_rows[key]
+            self._simlock_flash_rows[key] = bright
             self._paint_simlock_row(row, bright=bright)
 
     def _paint_simlock_row(self, row: int, *, bright: bool) -> None:
@@ -1689,15 +1740,17 @@ class ImeiToolWindow(QMainWindow):
             self._updating_table = False
 
     def _stop_simlock_row_flash(self, row: int) -> None:
-        self._simlock_flash_rows.pop(row, None)
-        if not self._simlock_flash_rows:
-            self._simlock_flash_timer.stop()
-        if 0 <= row < len(self.records):
-            self._update_row(row, self.records[row])
+        record = self._record_at_index(row)
+        if record is not None:
+            self._stop_simlock_row_flash_for_record(record)
 
     def _stop_all_simlock_flash(self) -> None:
-        for row in list(self._simlock_flash_rows):
-            self._stop_simlock_row_flash(row)
+        for key in list(self._simlock_flash_rows):
+            row = self._row_for_flash_key(key)
+            self._simlock_flash_rows.pop(key, None)
+            if row is not None:
+                self._update_row(row, self.records[row])
+        self._simlock_flash_timer.stop()
 
     def _begin_simlock_pending_ui(self, row: int, record: DeviceRecord) -> None:
         record.simlock = SIMLOCK_PENDING_LABEL

@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Mã hóa mã nguồn bằng Pyarmor (cần pyarmor-regfile-*.zip)."""
+"""Mã hóa mã nguồn bằng Pyarmor (cần pyarmor-regfile-*.zip + internet)."""
 
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OBF_DIR = PROJECT_ROOT / "build" / "obf"
+
+# Toàn bộ app — basic license không hỗ trợ --private/--restrict.
+OBF_TARGETS = ("main.py", "src/")
 
 
 def _pyarmor_exe() -> str:
@@ -34,50 +38,71 @@ def _find_regfile() -> Path | None:
     return matches[0] if matches else None
 
 
-def main() -> int:
+def _run(cmd: list[str], *, cwd: Path) -> None:
+    try:
+        subprocess.run(cmd, check=True, cwd=str(cwd))
+    except subprocess.CalledProcessError as exc:
+        if exc.returncode == 2:
+            print(
+                "\nGợi ý: license Pyarmor basic cần **internet** khi obfuscate.\n"
+                "  - Kiểm tra mạng / firewall\n"
+                "  - pyarmor reg pyarmor-regfile-9722.zip\n"
+                "  - Thử lại: python scripts/pyarmor_obfuscate.py\n"
+                "  - Build tạm không obfuscate: SKIP_PYARMOR=1 ./build_mac.sh\n",
+                file=sys.stderr,
+            )
+        raise
+
+
+def obfuscate(*, platform: str | None = None, reuse: bool = False) -> Path:
     regfile = _find_regfile()
     pyarmor = _pyarmor_exe()
     if regfile is None:
-        print(
-            "ERROR: Missing pyarmor-regfile-*.zip in project root.\n"
-            "\n"
-            "First-time activation:\n"
-            '  1. Save Pyarmor email attachment as pyarmor-regcode-9722.txt\n'
-            '  2. pyarmor reg -p "Taoden IMEI Tool" pyarmor-regcode-9722.txt\n'
-            "  3. Keep pyarmor-regfile-9722.zip for future builds:\n"
-            "     pyarmor reg pyarmor-regfile-9722.zip",
-            file=sys.stderr,
+        raise FileNotFoundError(
+            "Thiếu pyarmor-regfile-*.zip trong thư mục dự án.\n"
+            "Kích hoạt lần đầu: pyarmor reg -p \"Taoden IMEI Tool\" pyarmor-regcode-9722.txt"
         )
-        return 1
 
-    platform = os.environ.get("PYARMOR_PLATFORM", _default_platform())
+    plat = platform or os.environ.get("PYARMOR_PLATFORM", _default_platform())
+
+    if reuse and (OBF_DIR / "main.py").is_file():
+        runtime = next(OBF_DIR.glob("pyarmor_runtime_*"), None)
+        if runtime is not None:
+            print(f"==> Dùng lại obf có sẵn: {OBF_DIR} (REUSE_OBF=1)")
+            return OBF_DIR
+
     print(f"==> Pyarmor register ({regfile.name})")
-    subprocess.run([pyarmor, "reg", str(regfile)], check=True, cwd=str(PROJECT_ROOT))
+    _run([pyarmor, "reg", str(regfile)], cwd=PROJECT_ROOT)
 
     if OBF_DIR.exists():
-        import shutil
-
         shutil.rmtree(OBF_DIR)
     OBF_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"==> Pyarmor gen -> {OBF_DIR} (platform: {platform})")
-    subprocess.run(
-        [
-            pyarmor,
-            "gen",
-            "-O",
-            str(OBF_DIR),
-            "--platform",
-            platform,
-            "-r",
-            "main.py",
-            "src/",
-        ],
-        cwd=str(PROJECT_ROOT),
-        check=True,
-    )
-
+    print(f"==> Pyarmor gen -> {OBF_DIR} (platform: {plat})")
+    cmd = [
+        pyarmor,
+        "gen",
+        "-O",
+        str(OBF_DIR),
+        "--platform",
+        plat,
+        "-r",
+        *OBF_TARGETS,
+    ]
+    _run(cmd, cwd=PROJECT_ROOT)
     print(f"PYARMOR_OBF_DIR={OBF_DIR}")
+    return OBF_DIR
+
+
+def main() -> int:
+    reuse = os.environ.get("REUSE_OBF", "").strip() in ("1", "true", "yes")
+    try:
+        obfuscate(reuse=reuse)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError:
+        return 1
     return 0
 
 

@@ -31,7 +31,15 @@ python main.py
 
 ## Hướng dẫn sử dụng
 
-File PDF kèm hình minh họa: **[Hướng dẫn.pdf](Hướng%20dẫn.pdf)**
+File PDF: **[docs/Huong-dan-su-dung.pdf](docs/Huong-dan-su-dung.pdf)** (tự tạo: `python scripts/generate_user_guide_pdf.py`).
+
+Sau khi build, PDF nằm cạnh app: **`dist/Huong-dan-su-dung.pdf`**.
+
+## AI / Cursor
+
+- **AGENTS.md** — hướng dẫn agent
+- **`.cursor/skills/taoden-imei/`** — skill dự án
+- **`.cursor/rules/`** — rules theo module (GUI, API, build, …)
 
 ## Sử dụng (tóm tắt)
 
@@ -62,6 +70,8 @@ Menu **Tệp → Xuất Excel** hoặc nút **Xuất Excel**. Cột: Thời gian
 
 Build ra **`dist/Taoden IMEI Tool.app`** — kéo vào Applications, double-click để chạy. Python, thư viện và **OCR macOS Vision** đã nhúng sẵn (app nhẹ hơn, không cần Tesseract).
 
+**Mặc định có Pyarmor obfuscate** toàn bộ `main.py` + `src/` trước khi PyInstaller đóng gói.
+
 ```bash
 ./build_mac.sh
 ```
@@ -69,7 +79,30 @@ Build ra **`dist/Taoden IMEI Tool.app`** — kéo vào Applications, double-clic
 Yêu cầu khi build (máy dev):
 
 - macOS 11+ (OCR: macOS 10.15+, Live Text: macOS 14+)
+- File **`pyarmor-regfile-9722.zip`** ở thư mục gốc (không commit git)
+- **Internet** lúc obfuscate (license Pyarmor basic xác thực online)
 - Nhúng Tesseract dự phòng (tùy chọn): `BUNDLE_TESSERACT=1 ./build_mac.sh`
+
+Tùy chọn build:
+
+| Lệnh | Ý nghĩa |
+|------|---------|
+| `OBF_ONLY=1 ./build_mac.sh` | Chỉ obfuscate → `build/obf/` |
+| `REUSE_OBF=1 ./build_mac.sh` | Giữ obf cũ, build nhanh (đổi code → obfuscate lại) |
+| `SKIP_PYARMOR=1 ./build_mac.sh` | Bỏ obfuscate (chỉ khi Pyarmor lỗi mạng) |
+| `TARGET_ARCH=x86_64 ./build_mac.sh` | Bản Intel |
+| `BUILD_ALL=1 ./build_mac.sh` | arm64 + Intel |
+
+Obfuscate riêng (không đóng gói):
+
+```bash
+source .venv/bin/activate
+pip install pyarmor
+python scripts/pyarmor_obfuscate.py
+# → build/obf/  ;  export PYARMOR_OBF_DIR=$(pwd)/build/obf
+```
+
+Windows: `.\build_win.ps1` (hoặc `-SkipPyarmor` khi cần).
 
 Sau khi build:
 
@@ -79,8 +112,8 @@ Sau khi build:
 File phát hành gọn (chỉ app):
 
 ```bash
-# Tạo file zip để gửi cho người khác
-cd dist && zip -r "../Taoden-IMEI-Tool-macOS.zip" "Taoden IMEI Tool.app"
+# Tạo file zip để gửi cho người khác (app + hướng dẫn)
+cd dist && zip -r "../Taoden-IMEI-Tool-macOS.zip" "Taoden IMEI Tool.app" "Huong-dan-su-dung.pdf"
 ```
 
 ## API server (Laravel)

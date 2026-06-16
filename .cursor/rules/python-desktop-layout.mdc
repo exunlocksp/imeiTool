@@ -1,0 +1,31 @@
+---
+description: Cấu trúc project Python desktop (PySide6 + PyInstaller)
+globs: main.py,src/**/*.py,requirements.txt
+alwaysApply: false
+---
+
+# Python desktop — cấu trúc
+
+```
+imeiTool/
+  main.py              # freeze_support, crash log, prime_macos_app_name
+  imei_tool.spec       # PyInstaller (+ PYARMOR_OBF_DIR)
+  build_mac.sh         # pyarmor → pyinstaller → PDF hướng dẫn
+  docs/api.md          # contract API
+  assets/              # AppIcon, logo
+  scripts/             # pyarmor, generate_user_guide_pdf, icon
+  src/
+    gui.py             # ImeiToolWindow, run_app()
+    app_branding.py    # APP_NAME, VERSION, BUNDLE_ID
+    bundle_paths.py    # is_frozen(), MEIPASS
+    theme.py           # QSS dark theme
+    database.py        # SQLite + app_orders
+    order_sync.py      # engine đơn IMEI
+    api_client.py      # HTTP API
+```
+
+## Quy tắc
+
+- Backend Laravel → repo riêng, không gộp vào Python
+- Branding tập trung `app_branding.py`
+- `multiprocessing.freeze_support()` trước GUI

@@ -1,0 +1,30 @@
+---
+description: Desktop — models, SQLite, export, auto_services
+globs: src/models.py,src/database.py,src/auto_services.py,src/export*.py,src/excel_export.py,src/text_export.py
+alwaysApply: false
+---
+
+# Desktop — dữ liệu local
+
+## SQLite
+
+Path: `~/Library/Application Support/Taoden IMEI/devices.db` (macOS).
+
+- `device_records` — bảng chính
+- `app_orders` — status 1/2/3/4, resume khi mở app
+- `app_settings`, `license_cache`
+
+## DeviceRecord
+
+Nguồn: USB (`usb_reader`), OCR (`ocr_parser`), import dòng. Dedupe theo serial.
+
+## auto_services.py
+
+- Parse model suffix (`_clean_model_suffixes`) — đồng bộ logic với server `DeviceRecordResultParser`
+- `apply_order_result` / `append_service_note` — ghi chú dịch vụ
+- `resume_pending_orders` — legacy; ưu tiên `order_sync.OrderSyncEngine`
+
+## Export
+
+- Excel/Text: dialog tick cột (`export_fields_dialog.py`)
+- Text = tab-separated, không header

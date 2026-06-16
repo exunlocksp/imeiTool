@@ -1,8 +1,11 @@
 #!/bin/bash
 # Build macOS (Pyarmor + PyInstaller): dist/Taoden IMEI Tool.app
 #
-# Mặc định: clean toàn bộ → pyarmor → đóng gói
+#   SKIP_PYARMOR=1 ./build_mac.sh       — PyInstaller thuần (dev / khi Pyarmor lỗi mạng)
+#   REUSE_OBF=1 ./build_mac.sh          — giữ build/obf, không obfuscate lại
+#   OBF_ONLY=1 ./build_mac.sh           — chỉ chạy Pyarmor, không đóng gói
 #
+#   Mặc định: clean toàn bộ → pyarmor → đóng gói
 #   ./build_mac.sh                    — Apple Silicon (arm64)
 #   TARGET_ARCH=x86_64 ./build_mac.sh — Mac Intel
 #   BUILD_ALL=1 ./build_mac.sh        — cả arm64 + Intel (2 file .app trong dist/)
@@ -59,7 +62,18 @@ if [[ "${SKIP_CLEAN:-0}" == "1" ]]; then
 else
   echo "==> Clean build / dist / pyarmor"
   chmod -R u+w build dist 2>/dev/null || true
-  rm -rf build dist .pyarmor build/obf
+  if [[ "${REUSE_OBF:-0}" == "1" && -f build/obf/main.py ]]; then
+    rm -rf build dist .pyarmor
+    echo "    (giữ build/obf — REUSE_OBF=1)"
+  else
+    rm -rf build dist .pyarmor build/obf
+  fi
+fi
+
+if [[ "${OBF_ONLY:-0}" == "1" ]]; then
+  echo "==> Chỉ obfuscate (OBF_ONLY=1)"
+  bash scripts/pyarmor_obfuscate.sh
+  exit 0
 fi
 
 echo "==> Kiến trúc: $TARGET_ARCH"
@@ -91,11 +105,24 @@ if [[ "${BUNDLE_TESSERACT:-0}" == "1" ]]; then
 fi
 
 echo "==> Pyarmor obfuscate"
-bash scripts/pyarmor_obfuscate.sh
-export PYARMOR_OBF_DIR="$(pwd)/build/obf"
+if [[ "${SKIP_PYARMOR:-0}" == "1" ]]; then
+  echo "    (bỏ qua — SKIP_PYARMOR=1)"
+  unset PYARMOR_OBF_DIR
+elif [[ "${REUSE_OBF:-0}" == "1" && -f build/obf/main.py ]]; then
+  export REUSE_OBF=1
+  bash scripts/pyarmor_obfuscate.sh
+  export PYARMOR_OBF_DIR="$(pwd)/build/obf"
+else
+  bash scripts/pyarmor_obfuscate.sh
+  export PYARMOR_OBF_DIR="$(pwd)/build/obf"
+fi
 
 echo "==> PyInstaller"
 "${PYTHON[@]}" -m PyInstaller imei_tool.spec --noconfirm --clean
+
+echo "==> Hướng dẫn PDF → dist/"
+"${PYTHON[@]}" scripts/generate_user_guide_pdf.py
+cp docs/Huong-dan-su-dung.pdf dist/
 
 APP="dist/Taoden IMEI Tool${APP_SUFFIX}.app"
 BUILT="dist/Taoden IMEI Tool.app"
@@ -108,6 +135,7 @@ if [[ -d "$APP" ]]; then
   echo ""
   echo "=============================================="
   echo "  Build xong: $APP"
+  echo "  Hướng dẫn:  dist/Huong-dan-su-dung.pdf"
   echo "  Mở: open \"$APP\""
   echo "=============================================="
   echo ""
