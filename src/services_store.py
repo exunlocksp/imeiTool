@@ -275,6 +275,60 @@ def sync_services_from_server(*, timeout: float = 15.0) -> tuple[bool, str, list
     return True, message, services, credits
 
 
+@dataclass(frozen=True)
+class ServicesRunEstimate:
+    """Ước tính trước khi Run dịch vụ từ dialog."""
+
+    record_count: int
+    paid_service_count: int
+    simlock_service_count: int
+    skipped_save_imei: int
+    required_vnd: int
+    simlock_check_count: int
+
+    @property
+    def has_payable_orders(self) -> bool:
+        return self.paid_service_count > 0 and self.required_vnd > 0
+
+    @property
+    def has_simlock_checks(self) -> bool:
+        return self.simlock_check_count > 0
+
+
+def estimate_services_run(
+    service_ids: list[int],
+    record_count: int,
+) -> ServicesRunEstimate:
+    """Tính VNĐ cần trừ (IMEI × giá dịch vụ trả phí) và số lượt simlock free."""
+    n = max(0, int(record_count))
+    required_vnd = 0
+    paid_count = 0
+    simlock_svc = 0
+    skipped_save = 0
+
+    for sid in service_ids:
+        svc = find_service_by_id(sid)
+        if svc is None:
+            continue
+        if svc.is_save_imei:
+            skipped_save += 1
+            continue
+        if svc.is_simlock:
+            simlock_svc += 1
+            continue
+        paid_count += 1
+        required_vnd += n * max(0, int(svc.credit))
+
+    return ServicesRunEstimate(
+        record_count=n,
+        paid_service_count=paid_count,
+        simlock_service_count=simlock_svc,
+        skipped_save_imei=skipped_save,
+        required_vnd=required_vnd,
+        simlock_check_count=n * simlock_svc if simlock_svc else 0,
+    )
+
+
 def find_service_by_id(service_id: int) -> Optional[ServiceItem]:
     for item in load_services_cache().services:
         if item.server_id == service_id:

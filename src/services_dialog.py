@@ -30,8 +30,10 @@ from src.auto_services import (
 )
 from src.models import DeviceRecord
 from src.vnd_format import VND_LABEL, format_vnd
+from src.license import refresh_license_status
 from src.services_store import (
     ServiceItem,
+    estimate_services_run,
     find_service_by_id,
     load_services_cache,
     save_auto_service_prefs,
@@ -268,6 +270,49 @@ class ServicesDialog(QDialog):
 
         self._save_prefs()
 
+        status = refresh_license_status()
+        if not status.valid:
+            QMessageBox.warning(
+                self,
+                "Dịch vụ",
+                status.message or "Chưa đăng nhập hoặc phiên không hợp lệ.",
+            )
+            return
+
+        self._credits = int(status.credits)
+        estimate = estimate_services_run(service_ids, len(records))
+
+        if estimate.has_payable_orders and estimate.required_vnd > self._credits:
+            QMessageBox.warning(
+                self,
+                "Dịch vụ",
+                (
+                    f"Không đủ {VND_LABEL} để chạy.\n\n"
+                    f"Cần: {format_vnd(estimate.required_vnd)} {VND_LABEL}\n"
+                    f"Số dư: {format_vnd(self._credits)} {VND_LABEL}\n\n"
+                    f"{estimate.record_count} IMEI × "
+                    f"{estimate.paid_service_count} dịch vụ trả phí"
+                ),
+            )
+            return
+
+        if (
+            estimate.has_simlock_checks
+            and status.simlock_count > 0
+            and status.simlock_remaining < estimate.simlock_check_count
+        ):
+            QMessageBox.warning(
+                self,
+                "Dịch vụ",
+                (
+                    "Không đủ lượt check simlock miễn phí.\n\n"
+                    f"Cần: {estimate.simlock_check_count} lượt\n"
+                    f"Còn: {status.simlock_remaining}/{status.simlock_count}\n\n"
+                    "Dùng dịch vụ trả phí khác hoặc liên hệ admin."
+                ),
+            )
+            return
+
         # Tách dịch vụ simlock (gọi endpoint riêng) khỏi đơn IMEI thường.
         # Đơn IMEI → đẩy vào engine nền: app chỉ gửi/lấy kết quả qua server.
         simlock_ids: list[int] = []
@@ -380,7 +425,7 @@ class ServicesDialog(QDialog):
     def _update_status(self, synced_at: str, count: int) -> None:
         if self._running:
             return
-        credit_part = f" — {format_vnd(self._credits)} {VND_LABEL}" if self._credits else ""
+        credit_part = f" — {format_vnd(self._credits)} {VND_LABEL}"
         ticked = len(self._collect_selected_ids())
         auto_part = f" · {ticked} dịch vụ tick" if ticked else ""
         self._status_label.setText(
