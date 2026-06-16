@@ -13,7 +13,7 @@ Write-Host "==> Clean build / dist / obf"
 if ($ReuseObf -and (Test-Path "build\obf\main.py")) {
     if (Test-Path dist) { Remove-Item dist -Recurse -Force -ErrorAction SilentlyContinue }
     if (Test-Path .pyarmor) { Remove-Item .pyarmor -Recurse -Force -ErrorAction SilentlyContinue }
-    Write-Host "    (giu build\obf — ReuseObf)"
+    Write-Host "    (keep build\obf - ReuseObf)"
 } else {
     if (Test-Path build) { Remove-Item build -Recurse -Force -ErrorAction SilentlyContinue }
     if (Test-Path dist) { Remove-Item dist -Recurse -Force -ErrorAction SilentlyContinue }

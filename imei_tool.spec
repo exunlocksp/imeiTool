@@ -46,6 +46,7 @@ for _bundle in (tesseract_bundle, project_dir / "tesseract"):
 hiddenimports += collect_submodules("pymobiledevice3")
 hiddenimports += collect_submodules("PIL")
 hiddenimports += collect_submodules("keyring")
+hiddenimports += collect_submodules("src")
 try:
     hiddenimports += collect_submodules("ocrmac")
 except Exception:

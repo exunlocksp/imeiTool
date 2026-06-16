@@ -68,7 +68,7 @@ def obfuscate(*, platform: str | None = None, reuse: bool = False) -> Path:
     if reuse and (OBF_DIR / "main.py").is_file():
         runtime = next(OBF_DIR.glob("pyarmor_runtime_*"), None)
         if runtime is not None:
-            print(f"==> Dùng lại obf có sẵn: {OBF_DIR} (REUSE_OBF=1)")
+            print(f"==> Reuse existing obf: {OBF_DIR} (REUSE_OBF=1)")
             return OBF_DIR
 
     print(f"==> Pyarmor register ({regfile.name})")
